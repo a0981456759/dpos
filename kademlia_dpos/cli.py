@@ -6,7 +6,6 @@ import time
 from typing import Dict, List, Any
 
 def create_parser():
-    """Create the command-line argument parser."""
     parser = argparse.ArgumentParser(description='DPoS Voting System CLI')
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
@@ -81,17 +80,7 @@ def create_parser():
 
 
 def make_request(method: str, url: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
-    """
-    Make an HTTP request to the API.
-    
-    Args:
-        method: HTTP method (GET, POST, etc.)
-        url: URL to request
-        data: Data to send (for POST requests)
-        
-    Returns:
-        Response JSON
-    """
+
     try:
         if method.upper() == 'GET':
             response = requests.get(url)
@@ -108,12 +97,10 @@ def make_request(method: str, url: str, data: Dict[str, Any] = None) -> Dict[str
 
 
 def print_json(data: Any):
-    """Print data as formatted JSON."""
     print(json.dumps(data, indent=2))
 
 
 def main():
-    """Main CLI entrypoint."""
     parser = create_parser()
     args = parser.parse_args()
     

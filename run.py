@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import argparse
 import asyncio
 from kademlia_dpos.api import start_api
@@ -10,7 +9,7 @@ import time
 visualizer = None
 
 def run_visualizer(network, consensus, node_id):
-    """Run visualization logger in the background"""
+
     global visualizer
     visualizer = NetworkVisualizer(network, consensus, node_id)
     
@@ -32,9 +31,7 @@ def run_visualizer(network, consensus, node_id):
     loop.run_forever()
 
 def main():
-    """
-    Main entry point for the DPoS voting server.
-    """
+
     parser = argparse.ArgumentParser(description='Start DPoS voting server')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind the API server to')
     parser.add_argument('--port', type=int, default=5000, help='Port for the API server')

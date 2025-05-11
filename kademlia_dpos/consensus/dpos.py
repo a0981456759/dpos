@@ -7,19 +7,10 @@ import uuid
 from typing import Dict, List, Any, Optional, Tuple
 
 class DPoSConsensus:
-    """
-    Implementation of the Delegated Proof of Stake consensus algorithm.
-    """
+
     
     def __init__(self, network, node_id: str, stake: int = 0):
-        """
-        Initialize a DPoS consensus instance.
-        
-        Args:
-            network: The network interface for communication
-            node_id: Unique identifier for this node
-            stake: The stake of this node (used for voting power)
-        """
+
         self.network = network
         self.node_id = node_id
         self.stake = stake
@@ -29,13 +20,7 @@ class DPoSConsensus:
         self.votes = {}  # {voter_id: delegate_id}
         
     async def register_node(self, address: str, port: int):
-        """
-        Register this node with the network.
-        
-        Args:
-            address: IP address of this node
-            port: Port this node is listening on
-        """
+
         node_info = {
             "id": self.node_id,
             "address": address,
@@ -61,12 +46,7 @@ class DPoSConsensus:
         print(f"Node registration complete: {self.node_id}, global node count: {len(all_nodes)}")
     
     async def update_stake(self, new_stake: int):
-        """
-        Update the stake of this node.
-        
-        Args:
-            new_stake: New stake value
-        """
+
         self.stake = new_stake
         # Re-register with updated stake
         node_info = await self.network.get_value(f"node:{self.node_id}")
@@ -75,25 +55,11 @@ class DPoSConsensus:
             await self.network.set_value(f"node:{self.node_id}", node_info)
     
     async def get_all_nodes(self) -> List[Dict[str, Any]]:
-        """
-        Get information about all nodes in the network.
-        
-        Returns:
-            List of node information dictionaries
-        """
+
         return await self.network.get_nodes()
         
     async def start_delegate_election(self, num_delegates: int = 21, election_duration: int = 3600) -> str:
-        """
-        Start an election for delegates.
-        
-        Args:
-            num_delegates: Number of delegates to elect
-            election_duration: Duration of the election in seconds
-            
-        Returns:
-            ID of the election
-        """
+
         election_id = str(uuid.uuid4())
         
         election_info = {
@@ -110,13 +76,7 @@ class DPoSConsensus:
         return election_id
     
     async def vote_for_delegate(self, election_id: str, delegate_id: str):
-        """
-        Vote for a delegate in an election.
-        
-        Args:
-            election_id: ID of the election
-            delegate_id: ID of the delegate to vote for
-        """
+
         await self.network.cast_vote(election_id, self.node_id, {
             "delegate": delegate_id,
             "weight": self.stake,
@@ -126,15 +86,7 @@ class DPoSConsensus:
         self.votes[election_id] = delegate_id
     
     async def count_votes(self, election_id: str) -> Dict[str, int]:
-        """
-        Count votes in a delegate election.
-        
-        Args:
-            election_id: ID of the election
-            
-        Returns:
-            Dictionary mapping delegate IDs to vote counts weighted by stake
-        """
+
         results = await self.network.get_vote_results(election_id)
         
         # Count weighted votes
@@ -151,15 +103,7 @@ class DPoSConsensus:
         return weighted_votes
     
     async def finalize_election(self, election_id: str) -> List[str]:
-        """
-        Finalize an election and select delegates.
-        
-        Args:
-            election_id: ID of the election
-            
-        Returns:
-            List of selected delegate IDs
-        """
+
         vote_counts = await self.count_votes(election_id)
         
         # Sort delegates by vote count in descending order
@@ -205,12 +149,7 @@ class DPoSConsensus:
         return selected_delegates
     
     async def sync_delegates(self):
-        """
-        Synchronize the list of delegates from the network.
-        
-        Returns:
-            True if the node is a delegate, False otherwise
-        """
+ 
         delegates = await self.network.get_value("consensus:delegates")
         if delegates:
             self.delegates = delegates
@@ -240,18 +179,7 @@ class DPoSConsensus:
     
     async def start_proposal_vote(self, title: str, description: str, options: List[str], 
                                  vote_duration: int = 3600) -> str:
-        """
-        Start a vote on a proposal.
-        
-        Args:
-            title: Title of the proposal
-            description: Description of the proposal
-            options: List of voting options
-            vote_duration: Duration of the vote in seconds
-            
-        Returns:
-            ID of the vote
-        """
+
         vote_id = str(uuid.uuid4())
         
         vote_info = {
@@ -270,13 +198,7 @@ class DPoSConsensus:
         return vote_id
     
     async def vote_on_proposal(self, vote_id: str, option: str):
-        """
-        Vote on a proposal.
-        
-        Args:
-            vote_id: ID of the vote
-            option: Selected option
-        """
+
         vote_info = await self.network.get_vote(vote_id)
         if not vote_info or vote_info.get("status") != "active":
             raise ValueError("Vote not active or not found")
@@ -291,15 +213,7 @@ class DPoSConsensus:
         })
     
     async def get_proposal_results(self, vote_id: str) -> Dict[str, int]:
-        """
-        Get results of a proposal vote.
-        
-        Args:
-            vote_id: ID of the vote
-            
-        Returns:
-            Dictionary mapping options to vote counts weighted by stake
-        """
+
         results = await self.network.get_vote_results(vote_id)
         
         # Count weighted votes for each option
@@ -316,15 +230,7 @@ class DPoSConsensus:
         return option_counts
     
     async def finalize_proposal_vote(self, vote_id: str) -> Dict[str, Any]:
-        """
-        Finalize a proposal vote.
-        
-        Args:
-            vote_id: ID of the vote
-            
-        Returns:
-            Dictionary with vote results
-        """
+
         vote_info = await self.network.get_vote(vote_id)
         if not vote_info:
             raise ValueError("Vote not found")
@@ -346,12 +252,7 @@ class DPoSConsensus:
         return vote_info
     
     async def get_active_votes(self) -> List[Dict[str, Any]]:
-        """
-        Get information about all active votes.
-        
-        Returns:
-            List of active vote information dictionaries
-        """
+
         active_vote_ids = await self.network.get_active_votes()
         
         active_votes = []

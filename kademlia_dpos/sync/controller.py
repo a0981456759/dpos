@@ -1,21 +1,11 @@
-# kademlia_dpos/sync/controller.py
 import time
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional
 
 class DataSyncController:
-    """負責管理節點數據同步的控制器"""
     
     def __init__(self, network, node_id, consensus=None):
-        """
-        初始化同步控制器
-        
-        Args:
-            network: 分佈式網絡接口
-            node_id: 當前節點ID
-            consensus: 共識機制實例
-        """
         self.network = network
         self.node_id = node_id
         self.consensus = consensus
@@ -24,54 +14,51 @@ class DataSyncController:
         self.logger = logging.getLogger(__name__)
     
     def set_consensus(self, consensus):
-        """設置共識機制實例 (可以後期設置)"""
         self.consensus = consensus
     
     async def perform_sync(self):
-        """執行完整的數據同步流程"""
         if self.sync_in_progress:
-            self.logger.info("同步已在進行中，跳過")
+            self.logger.info("Synchronization already in progress, skipping")
             return False
             
         self.sync_in_progress = True
-        self.logger.info("開始執行數據同步")
+        self.logger.info("Starting data synchronization")
         
         try:
-            # 1. 獲取最新的全局時間戳或版本號
+            # 1. Get the latest global timestamp or version number
             network_state = await self.network.get_value("system:state")
             
-            # 2. 按優先級順序同步數據
+            # 2. Synchronize data in priority order
             delegates = await self.sync_delegates()
             active_votes = await self.sync_active_votes()
             nodes = await self.sync_nodes()
             
-            # 3. 更新本地同步時間戳
+            # 3. Update local synchronization timestamp
             self.last_sync_time = time.time()
             
-            self.logger.info(f"同步完成: {len(delegates)} 代表, {len(active_votes)} 活躍投票, {len(nodes)} 節點")
+            self.logger.info(f"Synchronization completed: {len(delegates)} delegates, {len(active_votes)} active votes, {len(nodes)} nodes")
             return True
         except Exception as e:
-            self.logger.error(f"同步過程中發生錯誤: {e}")
+            self.logger.error(f"Error during synchronization process: {e}")
             return False
         finally:
             self.sync_in_progress = False
     
     async def sync_delegates(self):
-        """同步代表列表"""
-        self.logger.info("同步代表列表")
+        self.logger.info("Synchronizing delegate list")
         delegates = await self.network.get_value("consensus:delegates") or []
         
         if self.consensus and delegates:
-            # 更新本地共識機制中的代表列表
+            # Update the delegate list in the local consensus mechanism
             self.consensus.delegates = delegates
-            # 檢查當前節點是否為代表
+            # Check if the current node is a delegate
             was_delegate = self.consensus.is_delegate
             self.consensus.is_delegate = self.node_id in delegates
             
             if was_delegate != self.consensus.is_delegate:
-                self.logger.info(f"代表狀態已更新: {self.consensus.is_delegate}")
+                self.logger.info(f"Delegate status updated: {self.consensus.is_delegate}")
                 
-                # 更新節點信息中的代表狀態
+                # Update delegate status in node information
                 node_info = await self.network.get_value(f"node:{self.node_id}")
                 if node_info:
                     node_info["is_delegate"] = self.consensus.is_delegate
@@ -80,26 +67,24 @@ class DataSyncController:
         return delegates
     
     async def sync_active_votes(self):
-        """同步活躍投票"""
-        self.logger.info("同步活躍投票")
+        self.logger.info("Synchronizing active votes")
         active_votes = await self.network.get_value("votes:active") or []
         result = []
         
         for vote_id in active_votes:
             vote_info = await self.network.get_value(f"vote:{vote_id}")
             if vote_info:
-                # 同步投票結果
+                # Synchronize vote results
                 await self.sync_vote_results(vote_id)
                 result.append(vote_info)
         
         return result
     
     async def sync_vote_results(self, vote_id):
-        """同步特定投票的結果"""
-        # 獲取投票者列表
+        # Get voter list
         voters = await self.network.get_value(f"vote:{vote_id}:voters") or []
         
-        # 獲取每個投票
+        # Get each ballot
         results = {}
         for voter_id in voters:
             ballot = await self.network.get_value(f"vote:{vote_id}:ballot:{voter_id}")
@@ -109,8 +94,7 @@ class DataSyncController:
         return results
     
     async def sync_nodes(self):
-        """同步節點列表"""
-        self.logger.info("同步節點列表")
+        self.logger.info("Synchronizing node list")
         node_ids = await self.network.get_value("nodes:all") or []
         nodes = []
         
@@ -122,13 +106,12 @@ class DataSyncController:
         return nodes
     
     async def check_connectivity_and_sync(self):
-        """檢查網絡連接並在恢復連接時同步"""
-        # 檢查是否能訪問網絡
+        # Check if network can be accessed
         try:
             value = await self.network.get_value("system:state")
             if value is not None:
-                # 如果之前沒有同步過或同步時間較久，執行同步
-                if not self.last_sync_time or time.time() - self.last_sync_time > 300:  # 5分鐘
+                # Perform synchronization if never synced before or if last sync was too long ago
+                if not self.last_sync_time or time.time() - self.last_sync_time > 300:  # 5 minutes
                     await self.perform_sync()
         except Exception as e:
-            self.logger.warning(f"連接檢查失敗: {e}")
+            self.logger.warning(f"Connection check failed: {e}")
