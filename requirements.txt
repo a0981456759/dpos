@@ -1,0 +1,7 @@
+kademlia==2.2.2
+Flask==2.0.1
+requests==2.26.0
+cryptography==37.0.4
+aiohttp==3.7.4
+asyncio==3.4.3
+pycryptodome==3.14.1 

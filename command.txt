@@ -1,0 +1,186 @@
+
+Remove-Item -Path "$env:USERPROFILE\.kademlia_dpos" -Recurse -Force
+
+1. 
+python run.py --port 5000 --node-port 8468 --stake 100
+python run.py --port 5001 --node-port 8469 --stake 50 --bootstrap 127.0.0.1:8468
+python run.py --port 5002 --node-port 8470 --stake 75 --bootstrap 127.0.0.1:8468
+
+2.node info
+GET http://localhost:5000/node/info
+GET http://localhost:5001/node/info
+GET http://localhost:5002/node/info
+
+3. node detection
+GET http://localhost:5000/nodes (ddf954cad29b59d165b38ef9bdc9f639223d098f117af1cfc85f32aca43f801c)
+GET http://localhost:5001/nodes (7f6e21b45381af34f252b00dcc92c4722b9f872ac8e09b78828931dc688d5cbe)
+GET http://localhost:5002/nodes (855e6629851f0a15c23dc2bc7280db4d5466f10d4ade369a6f45ff7844e2d4ff)
+
+4. staking token
+POST http://localhost:5000/node/stake
+Body: {"stake": 200}
+
+POST http://localhost:5001/node/stake
+Body: {"stake": 150}
+
+POST http://localhost:5002/node/stake
+Body: {"stake": 100}
+
+
+5. recheck the info 
+GET http://localhost:5000/node/info
+GET http://localhost:5001/node/info
+GET http://localhost:5002/node/info
+
+6. election(write down the election id) (baee2e9e-155b-4c94-9a68-be922156d2e9)
+POST http://localhost:5000/delegates/election/start
+Body: {
+  "num_delegates": 2,
+  "duration": 600
+}
+
+7. check the init result
+GET http://localhost:5000/delegates/election/{election_id}/results
+
+
+8. voting
+POST http://localhost:5000/delegates/election/{election_id}/vote
+Body: {"delegate_id": "node2_ID"}
+
+POST http://localhost:5001/delegates/election/{election_id}/vote
+Body: {"delegate_id": "node2_ID"}
+
+POST http://localhost:5002/delegates/election/{election_id}/vote
+Body: {"delegate_id": "node_3ID"}
+
+8. check the result
+GET http://localhost:5000/delegates/election/{election_id}/results
+GET http://localhost:5001/delegates/election/{election_id}/results
+GET http://localhost:5002/delegates/election/{election_id}/results
+
+
+9. finalize the election
+POST http://localhost:5000/delegates/election/{election_id}/finalize
+
+10. check whos the delegates
+GET http://localhost:5000/delegates
+GET http://localhost:5001/delegates
+GET http://localhost:5002/delegates
+
+11.check node info again
+GET http://localhost:5000/node/info
+GET http://localhost:5001/node/info
+GET http://localhost:5002/node/info
+
+11. proposal (write down the vote id) (73b1594a-d4dc-4b8f-b140-7fccd3b91a5e)
+POST http://localhost:5000/votes/start
+Body: {
+  "title": "increase the salary",
+  "description": "increase 20%",
+  "options": ["Agree", "Reject", "Abstain"],
+  "duration": 600
+}
+
+12. voting
+POST http://localhost:5000/votes/{vote_id}/cast
+Body: {"option": "Agree"}
+
+POST http://localhost:5001/votes/{vote_id}/cast
+Body: {"option": "Agree"}
+
+POST http://localhost:5002/votes/{vote_id}/cast
+Body: {"option": "Reject"}
+
+13 check the result
+GET http://localhost:5000/votes/{vote_id}/results
+GET http://localhost:5001/votes/{vote_id}/results
+GET http://localhost:5002/votes/{vote_id}/results
+
+
+14. finalized the voting
+POST http://localhost:5000/votes/{vote_id}/finalize
+
+
+-------------------------------------------------------
+
+
+15. broken node test
+
+16 create a new vote (write down the vote id) (f2c5860f-bb77-4d08-885a-99677ee14ce6)
+
+
+POST http://localhost:5000/votes/start
+Body: {
+  "title": "broken node test",
+  "description": "test1",
+  "options": ["agree", "disagree"],
+  "duration": 600
+}
+
+
+17. voting
+
+POST http://localhost:5000/votes/{vote_id}/cast
+Body: {"option": "agree"}
+
+POST http://localhost:5001/votes/{vote_id}/cast
+Body: {"option": "disagree"}
+
+POST http://localhost:5002/votes/{vote_id}/cast
+Body: {"option": "agree"}
+
+
+18. check the result
+GET http://localhost:5000/votes/{vote_id}/results
+
+19. shut down 5001 node
+
+20. verify system can still work after one node shut down
+GET http://localhost:5000/nodes
+GET http://localhost:5000/votes/{vote_id}/results
+GET http://localhost:5002/votes/{vote_id}/results
+
+21 finalized the voting
+POST http://localhost:5000/votes/{vote_id}/finalize
+
+
+22.check the result
+GET http://localhost:5000/votes/{vote_id}/results
+
+23 run the node
+python run.py --port 5001 --node-port 8469 --stake 150 --bootstrap 127.0.0.1:8468
+
+24 wait a bit until node sync
+GET http://localhost:5000/nodes
+GET http://localhost:5002/nodes
+GET http://localhost:5001/node/info
+GET http://localhost:5001/votes/{vote_id}/results
+GET http://localhost:5001/delegates
+
+25. create a new voting and verify nodes can work (write down vote id) 24c2a07c-b499-4fa7-adda-4a190338133f
+POST http://localhost:5000/votes/start
+Body: {
+  "title": "node post recovery testing",
+  "description": "test2",
+  "options": ["agree", "disagree"],
+  "duration": 600
+}
+
+26 voting
+
+POST http://localhost:5000/votes/{新vote_id}/cast
+Body: {"option": "agree"}
+
+POST http://localhost:5001/votes/{新vote_id}/cast
+Body: {"option": "agree"}
+
+POST http://localhost:5002/votes/{新vote_id}/cast
+Body: {"option": "disagree"}
+
+
+
+27. check result
+GET http://localhost:5000/votes/{vote_id}/results
+GET http://localhost:5001/votes/{vote_id}/results
+GET http://localhost:5002/votes/{vote_id}/results
+
